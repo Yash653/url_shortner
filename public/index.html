@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <title>URl-SHORTHEN</title>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center">URL Shortener</h1>
+        <form class=" flex gap" id="shorten-form">
+<div>
+    <label for="url">Enter URL</label><br>
+    <input type="url" name="url" id="url" required>
+</div>
+<div>
+    <label for="shortcode">Enter ShortCode: </label><br>
+    <input type="text" name="shortcode" id="shortcode" required>
+</div>
+<button type="submit" class="primary">Shorten</button>
+
+        </form>
+        <h2 class="text-center">ShortEnds URLs</h2>
+        <ul id="short-urls"></ul>
+    </div>
+    <script>
+
+const fetchShortEndURL = async () => {
+  const response = await fetch("/links");
+  const links = await response.json();
+  console.log("Links:", links);
+
+  const list = document.getElementById("short-urls");
+  list.innerHTML = "";
+
+  for (const [shortCode, url] of Object.entries(links)) {
+    const li = document.createElement("li");
+    li.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span>
+          <a href="/${shortCode}" target="_blank">${window.location.origin}/${shortCode}</a> → ${url}
+        </span>
+        <button class="delete-btn" data-code="${shortCode}">❌</button>
+      </div>
+    `;
+    list.appendChild(li);
+  }
+
+  // Attach delete handlers *after* elements are in the DOM
+  document.querySelectorAll(".delete-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const shortCode = btn.dataset.code;
+      const confirmed = confirm(`Are you sure you want to delete "${shortCode}"?`);
+      if (!confirmed) return;
+
+      try {
+        const res = await fetch(`/delete/${shortCode}`, { method: "DELETE" });
+        if (res.ok) {
+          fetchShortEndURL(); // Refresh list
+        } else {
+          const errorMsg = await res.text();
+          alert("Delete failed: " + errorMsg);
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Error deleting link");
+      }
+    });
+  });
+};
+
+
+fetchShortEndURL();
+
+
+    </script>
+</body>
+
+</html>
